@@ -18,6 +18,7 @@ abstract class AdminEntity {
    * Fields of the entity that will be searchable on the list page
    */
   searchFields: string[] | null = null
+  fields: string[] | null = null
   resultsPerPage: number = 25
   widgets: { [propertyName: string]: WidgetConstructor } = {}
 
@@ -42,9 +43,10 @@ abstract class AdminEntity {
    * The fields displayed on the form
    */
   getFields(form: 'add' | 'change'): string[] {
+    if (this.fields) return this.fields
     return [
-      ...this.metadata.columns.map(column => column.propertyName),
-      ...this.metadata.manyToManyRelations.map(relation => relation.propertyName),
+      ...this.metadata.columns.map((column) => column.propertyName),
+      ...this.metadata.manyToManyRelations.map((relation) => relation.propertyName),
     ]
   }
 
@@ -52,12 +54,12 @@ abstract class AdminEntity {
     const fields = this.getFields(form)
 
     const widgets = fields
-      .filter(field => this.metadata.columns.map(column => column.propertyName).includes(field))
-      .filter(field => {
+      .filter((field) => this.metadata.columns.map((column) => column.propertyName).includes(field))
+      .filter((field) => {
         const column = this.metadata.findColumnWithPropertyName(field)
         return !(form === 'add' && column.isGenerated)
       })
-      .map(field => {
+      .map((field) => {
         const column = this.metadata.findColumnWithPropertyName(field)
         if (this.widgets[field]) {
           return new this.widgets[field](column, this.adminSite, entity)
@@ -67,8 +69,10 @@ abstract class AdminEntity {
       })
 
     const manyToManyWidgets = fields
-      .filter(field => !this.metadata.columns.map(column => column.propertyName).includes(field))
-      .map(field => {
+      .filter(
+        (field) => !this.metadata.columns.map((column) => column.propertyName).includes(field),
+      )
+      .map((field) => {
         const relation = this.metadata.findRelationWithPropertyPath(field)
         return new ManyToManyWidget(relation, this.adminSite, entity)
       })
@@ -141,8 +145,8 @@ function validateFieldsExist(
   const fieldsList = adminEntity[configField] as string[]
   if (!fieldsList) return
 
-  fieldsList.forEach(field => {
-    if (!metadata.columns.map(column => column.propertyName).includes(field)) {
+  fieldsList.forEach((field) => {
+    if (!metadata.columns.map((column) => column.propertyName).includes(field)) {
       throw new InvalidDisplayFieldsException(
         `Property ${field} invalid in ${configField}: does not exist on ${metadata.name}.`,
       )
@@ -158,7 +162,7 @@ function validateFieldsAreNotRelation(
   const fieldsList = adminEntity[configField] as string[]
   if (!fieldsList) return
 
-  fieldsList.forEach(field => {
+  fieldsList.forEach((field) => {
     const relation = metadata.findRelationWithPropertyPath(field)
     if (relation) {
       throw new InvalidDisplayFieldsException(
@@ -167,8 +171,8 @@ function validateFieldsAreNotRelation(
     }
   })
   if (!adminEntity.listDisplay) return
-  adminEntity.listDisplay.forEach(field => {
-    if (!metadata.columns.map(column => column.propertyName).includes(field)) {
+  adminEntity.listDisplay.forEach((field) => {
+    if (!metadata.columns.map((column) => column.propertyName).includes(field)) {
       throw new InvalidDisplayFieldsException(
         `Property ${field} invalid in listDisplay: does not exist on ${metadata.name}.`,
       )
